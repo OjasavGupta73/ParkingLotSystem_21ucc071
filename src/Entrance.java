@@ -32,7 +32,8 @@ class Entrance implements Runnable {
                 System.out.println("4. Show total spots available");
                 System.out.println("5. Show available spots on a floor");
                 System.out.println("6. Show details of all parked vehicles");
-                System.out.println("7. Exit");
+                System.out.println("7. Print Layout of Parking Lot");
+                System.out.println("8. Exit");
 
                 int choice = scanner.nextInt();
                 scanner.nextLine(); // Consume newline character
@@ -57,31 +58,57 @@ class Entrance implements Runnable {
                         showDetailsOfAllParkedVehicles();
                         break;
                     case 7:
+                        parkingLot.printParkingLotLayout();
+                        break;
+                    case 8:
                         running = false;
-                      //  return;// Exit loop
+                        //  return;// Exit loop
                         break;
                     default:
                         System.out.println("Invalid choice. Please try again.");
                 }
             } catch (Exception e) {
-                System.out.println("An error occurred: " + e.getMessage());
+                if(e.getMessage()!=null)System.out.println("An error occurred: " + e.getMessage());
             } finally {
                 inputLock.unlock(); // Release input lock
             }
         }
         scanner.close();
     }
-
     private void parkVehicle(Scanner scanner) {
         parkingLock.lock(); // Lock for parking operation
         try {
             System.out.print("Enter license plate: ");
             String licensePlate = scanner.nextLine();
-            System.out.print("Enter vehicle type (Car, Bike, Truck): ");
-            String type = scanner.nextLine();
+
+            System.out.println("Select vehicle type:");
+            System.out.println("1: Car  2: Bike  3: Truck");
+
+            int typeChoice;
+            String type = null;
+
+            while (type == null) {
+                typeChoice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+
+                switch (typeChoice) {
+                    case 1:
+                        type = "Car";
+                        break;
+                    case 2:
+                        type = "Bike";
+                        break;
+                    case 3:
+                        type = "Truck";
+                        break;
+                    default:
+                        System.out.println("Invalid choice. Please enter 1 for Car, 2 for Bike, or 3 for Truck.");
+                }
+            }
 
             boolean fromGate1 = "Entrance 1".equals(entranceName); // Determine gate based on entrance name
             Ticket ticket = parkingLot.parkVehicle(licensePlate, type, fromGate1);
+
             if (ticket != null) {
                 System.out.println("[" + entranceName + "] Vehicle parked successfully! Ticket ID: " + ticket.getTicketId());
                 parkingComplete.signal(); // Signal that parking is complete
@@ -141,18 +168,16 @@ class Entrance implements Runnable {
             System.out.println("No vehicles are currently parked.");
             return;
         }
-            System.out.println("===============================");
-            System.out.println("Details of all parked vehicles:");
+        System.out.println("===============================");
+        System.out.println("Details of all parked vehicles:");
         for (Ticket ticket : tickets) {
             System.out.println("===============================");
-            System.out.println("Ticket ID: " + ticket.getTicketId() +
-                    "\n" +
-                            " License Plate: " + ticket.getLicensePlate() +
-                    "\n" +
-                            " Spot: Floor " + (ticket.getSpot().getFloor() + 1) +
-                    "\n" +
-                            " Spot ID: " + ticket.getSpot().getSpotId());
-
+            System.out.println("Ticket ID: " + ticket.getTicketId() + "\n" +
+                    "Vehicle :"+ticket.getVehicle().getType()+" "+
+                    "License Plate:" + ticket.getLicensePlate() + "\n" +
+                    "Floor:" + (ticket.getSpot().getFloor() + 1) + "\n" +
+                    "Row No.:"+ ticket.getSpot().getRowNumber()+"\n"+
+                    "Spot No.:" + ticket.getSpot().getSpotId());
         }
         System.out.println("===============================");
     }

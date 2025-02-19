@@ -1,13 +1,15 @@
 class Spot {
     private int spotId;
     private int floor;
+    private int rowNumber;
     private boolean isOccupied;
     private Vehicle parkedVehicle;
     private Spot nextSpot; // Reference to the next spot for Trucks
 
-    public Spot(int spotId, int floor) {
+    public Spot(int spotId, int floor, int rowNumber) {
         this.spotId = spotId;
         this.floor = floor;
+        this.rowNumber = rowNumber;
         this.isOccupied = false;
         this.parkedVehicle = null;
         this.nextSpot = null;
@@ -19,6 +21,10 @@ class Spot {
 
     public int getFloor() {
         return floor;
+    }
+
+    public int getRowNumber() {
+        return rowNumber;
     }
 
     public boolean isOccupied() {
@@ -45,5 +51,9 @@ class Spot {
 
     public void setNextSpot(Spot nextSpot) {
         this.nextSpot = nextSpot;
+    }
+    @Override
+    public String toString(){
+        return "Spot: Floor:"+floor+"Row"+rowNumber+"SpotNo"+spotId;
     }
 }

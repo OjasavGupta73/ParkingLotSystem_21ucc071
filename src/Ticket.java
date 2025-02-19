@@ -1,11 +1,11 @@
 class Ticket {
     private int ticketId;
-    private String licensePlate;
+    private Vehicle vehicle;
     private Spot spot;
 
-    public Ticket(int ticketId, String licensePlate, Spot spot) {
+    public Ticket(int ticketId,Vehicle vehicle, Spot spot) {
         this.ticketId = ticketId;
-        this.licensePlate = licensePlate;
+        this.vehicle = vehicle;
         this.spot = spot;
     }
 
@@ -14,7 +14,10 @@ class Ticket {
     }
 
     public String getLicensePlate() {
-        return licensePlate;
+        return vehicle.getLicensePlate();
+    }
+    public Vehicle getVehicle(){
+        return vehicle;
     }
 
     public Spot getSpot() {

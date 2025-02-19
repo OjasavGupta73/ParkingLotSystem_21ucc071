@@ -1,15 +1,13 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
+
 class ParkingLot implements ParkingLotManager {
     private int numFloors;
     private int spotsPerFloor;
     private List<Floor> floors;
     private Map<String, Spot> parkedVehicles;
-    private Map<Integer, Ticket> tickets; // Map to store tickets by ticket ID
-    private static int ticketCounter = 100; // Ticket ID counter
+    private Map<Integer, Ticket> tickets;
+    private static int ticketCounter = 100;
     private final ReentrantLock lock = new ReentrantLock();
 
     public ParkingLot(int numFloors, int spotsPerFloor) {
@@ -35,7 +33,7 @@ class ParkingLot implements ParkingLotManager {
             }
 
             Vehicle vehicle = new Vehicle(licensePlate, type);
-            Spot spot = findAvailableSpot(vehicle,fromGate1);
+            Spot spot = findNearestAvailableSpot(vehicle);
 
             if (spot != null) {
                 spot.occupySpot(vehicle);
@@ -43,14 +41,16 @@ class ParkingLot implements ParkingLotManager {
 
                 if (vehicle.getType() == VehicleType.TRUCK) {
                     // Occupy the next spot for Trucks
-                    Spot nextSpot = floors.get(spot.getFloor()).getSpots().get(spot.getSpotId() + 1);
-                    nextSpot.occupySpot(vehicle);
-                    spot.setNextSpot(nextSpot); // Link the spots
+                    Spot nextSpot = findNextSpot(spot);
+                    if (nextSpot != null) {
+                        nextSpot.occupySpot(vehicle);
+                        spot.setNextSpot(nextSpot); // Link the spots
+                    }
                 }
 
                 // Generate a ticket
                 int ticketId = ticketCounter++;
-                Ticket ticket = new Ticket(ticketId, licensePlate, spot);
+                Ticket ticket = new Ticket(ticketId, vehicle, spot);
                 tickets.put(ticketId, ticket);
 
                 return ticket;
@@ -61,6 +61,44 @@ class ParkingLot implements ParkingLotManager {
         }
     }
 
+    private Spot findNearestAvailableSpot(Vehicle vehicle) {
+        // Prioritize Floor 1 over Floor 2
+        for (Floor floor : floors) {
+            if (floor.getAvailableSpots() > 0) {
+                PriorityQueue<Spot> availableSpots = floor.getnear();
+
+                while (!availableSpots.isEmpty()) {
+                    Spot spot = availableSpots.poll();
+                    //System.out.println(spot.toString());// Get the nearest available spot
+                    if (vehicle.getType() == VehicleType.TRUCK) {
+                        // Check if the next spot is also available for trucks
+                        Spot nextSpot = findNextSpot(spot);
+                        if (nextSpot != null && !nextSpot.isOccupied()) {
+                            return spot;
+                        } else {
+                            floor.addAvailableSpot(spot); // Add the spot back if next spot is not available
+                        }
+                    } else {
+                        return spot;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Spot findNextSpot(Spot spot) {
+        int floorNumber = spot.getFloor();
+        int rowNumber = spot.getRowNumber();
+        int spotId = spot.getSpotId() + 1;
+
+        List<Spot> row = floors.get(floorNumber).getRows().get(rowNumber);
+        if (spotId < row.size()) {
+            return row.get(spotId);
+        }
+        return null;
+    }
+
     @Override
     public boolean unparkVehicle(int ticketId) {
         lock.lock(); // Acquire lock
@@ -69,9 +107,13 @@ class ParkingLot implements ParkingLotManager {
             if (ticket != null) {
                 Spot spot = ticket.getSpot();
                 spot.freeSpot();
+                floors.get(spot.getFloor()).addAvailableSpot(spot); // Add the spot back to the priority queue
+
                 if (spot.getNextSpot() != null) {
                     spot.getNextSpot().freeSpot(); // Free the next spot for Trucks
+                    floors.get(spot.getFloor()).addAvailableSpot(spot.getNextSpot()); // Add the next spot back
                 }
+
                 parkedVehicles.remove(ticket.getLicensePlate());
                 tickets.remove(ticketId); // Remove the ticket
                 return true;
@@ -82,45 +124,12 @@ class ParkingLot implements ParkingLotManager {
         }
     }
 
-    private Spot findAvailableSpot(Vehicle vehicle, boolean fromGate1) {
-        if (fromGate1) {
-            // Search from start for Gate 1
-            for (Floor floor : floors) {
-                for (Spot spot : floor.getSpots()) {
-                    if (!spot.isOccupied()) {
-                        if (vehicle.getType() == VehicleType.TRUCK) {
-                            // Check if the next spot is also available for trucks
-                            int nextSpotId = spot.getSpotId() + 1;
-                            if (nextSpotId < spotsPerFloor && !floor.getSpots().get(nextSpotId).isOccupied()) {
-                                return spot;
-                            }
-                        } else {
-                            return spot;
-                        }
-                    }
-                }
-            }
-        } else {
-            // Search from end for Gate 2
-            for (int i = floors.size() - 1; i >= 0; i--) {
-                Floor floor = floors.get(i);
-                for (int j = spotsPerFloor - 1; j >= 0; j--) {
-                    Spot spot = floor.getSpots().get(j);
-                    if (!spot.isOccupied()) {
-                        if (vehicle.getType() == VehicleType.TRUCK) {
-                            // Check if the next spot is also available for trucks
-                            int nextSpotId = j - 1;
-                            if (nextSpotId >= 0 && !floor.getSpots().get(nextSpotId).isOccupied()) {
-                                return spot;
-                            }
-                        } else {
-                            return spot;
-                        }
-                    }
-                }
-            }
+    @Override
+    public int getAvailableSpotsPerFloor(int floor) {
+        if (floor < 0 || floor >= numFloors) {
+            throw new IllegalArgumentException("Invalid floor number.");
         }
-        return null;
+        return floors.get(floor).getAvailableSpots();
     }
 
     @Override
@@ -134,37 +143,67 @@ class ParkingLot implements ParkingLotManager {
     }
 
     @Override
-
-
     public String getVehicleLocation(int ticketId) {
         Ticket ticket = tickets.get(ticketId);
         if (ticket != null) {
             Spot spot = ticket.getSpot();
             if (spot.getNextSpot() != null) {
                 // For Trucks, return both spots
-                return "Floor: " + (spot.getFloor()+1) + ", Spots: " + spot.getSpotId() + " and " + spot.getNextSpot().getSpotId();
+                return "Floor: " + (spot.getFloor() + 1) + ", Row: " + (spot.getRowNumber() + 1) + ", Spots: " + spot.getSpotId() + " and " + spot.getNextSpot().getSpotId();
             } else {
                 // For Cars and Bikes, return a single spot
-                return "Floor: " + (spot.getFloor()+1) + ", Spot: " + spot.getSpotId();
+                return "Floor: " + (spot.getFloor() + 1) + ", Row: " + (spot.getRowNumber() + 1) + ", Spot: " + spot.getSpotId();
             }
         }
         return "Ticket not found.";
     }
 
     @Override
-    public int getAvailableSpotsPerFloor(int floor) {
-        if (floor < 0 || floor >= numFloors) {
-            throw new IllegalArgumentException("Invalid floor number.");
-        }
-
-        Floor selectedFloor = floors.get(floor);
-        return selectedFloor.getAvailableSpots();
-    }
     public List<Ticket> getAllParkedVehicles() {
         return new ArrayList<>(tickets.values());
     }
 
+    @Override
     public int getNumFloors() {
         return numFloors;
     }
+
+
+    @Override
+    public void printParkingLotLayout() {
+        lock.lock();
+        try {
+            for (Floor floor : floors) {
+                System.out.println("Floor " + (floor.getFloorNumber() + 1) + ":");
+                for (List<Spot> row : floor.getRows()) {
+                    System.out.println();
+                    for (Spot spot : row) {
+
+                        if (spot.isOccupied()) {
+                            Vehicle vehicle = spot.getParkedVehicle();
+                            if (vehicle.getType() == VehicleType.CAR) {
+                                System.out.print("|C|");
+                            } else if (vehicle.getType() == VehicleType.BIKE) {
+                                System.out.print("|B|");
+                            } else if (vehicle.getType() == VehicleType.TRUCK) {
+                                if (spot.getNextSpot() != null) {
+                                    System.out.print("|T T|");
+                                    continue; // Skip the next spot
+                                }
+                            }
+                        } else {
+                            System.out.print("|X|");
+                        }
+
+                    }
+                    System.out.println();
+                }
+                System.out.println(); // Extra line between floors
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 }
+
+

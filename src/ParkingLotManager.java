@@ -14,4 +14,6 @@ interface ParkingLotManager {
     int getNumFloors();
 
     List<Ticket> getAllParkedVehicles();
+
+    void printParkingLotLayout();
 }
