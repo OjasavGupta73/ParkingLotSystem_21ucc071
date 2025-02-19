@@ -17,8 +17,6 @@ public class Main {
 
             Thread entrance1 = new Thread(new Entrance(parkingLot, "Entrance 1"));
             entrance1.start();
-//            Thread entrance2 = new Thread(new Entrance(parkingLot, "Entrance 2"));
-//            entrance2.start();
 
         } catch (InvalidInputException e) {
             System.out.println("Error: " + e.getMessage());
