@@ -21,6 +21,7 @@ public class Main {
         } catch (InvalidInputException e) {
             System.out.println("Error: " + e.getMessage());
         }
+        System.out.println("Create a PR for this");
 
     }
 
