@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 class ParkingLot implements ParkingLotManager {
@@ -14,8 +15,8 @@ class ParkingLot implements ParkingLotManager {
         this.numFloors = numFloors;
         this.spotsPerFloor = spotsPerFloor;
         this.floors = new ArrayList<>();
-        this.parkedVehicles = new HashMap<>();
-        this.tickets = new HashMap<>();
+        this.parkedVehicles = new ConcurrentHashMap<>();
+        this.tickets = new ConcurrentHashMap<>();
 
         // Initialize floors
         for (int i = 0; i < numFloors; i++) {
@@ -74,6 +75,7 @@ class ParkingLot implements ParkingLotManager {
                         // Check if the next spot is also available for trucks
                         Spot nextSpot = findNextSpot(spot);
                         if (nextSpot != null && !nextSpot.isOccupied()) {
+                            availableSpots.poll();
                             return spot;
                         } else {
                             floor.addAvailableSpot(spot); // Add the spot back if next spot is not available
