@@ -5,6 +5,7 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
 
         try {
+            System.out.println("Checking a new PR");
             System.out.print("Enter the number of floors: ");
             int numFloors = scanner.nextInt();
             validateInput(numFloors, "Number of floors cannot be negative.");
