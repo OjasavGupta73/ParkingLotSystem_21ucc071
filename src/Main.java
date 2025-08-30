@@ -24,7 +24,7 @@ public class Main {
         System.out.println("Create a PR for this");
 
         System.out.println("Check this for PR");
-        System.out.print("Cehck new branch changes")
+        System.out.print("Cehck new branch changes");
     }
 
     private static void validateInput(int value, String errorMessage) throws InvalidInputException {
