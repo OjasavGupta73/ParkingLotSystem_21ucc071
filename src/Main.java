@@ -21,7 +21,10 @@ public class Main {
         } catch (InvalidInputException e) {
             System.out.println("Error: " + e.getMessage());
         }
+        System.out.println("Create a PR for this");
 
+        System.out.println("Check this for PR");
+        System.out.print("Cehck new branch changes");
     }
 
     private static void validateInput(int value, String errorMessage) throws InvalidInputException {

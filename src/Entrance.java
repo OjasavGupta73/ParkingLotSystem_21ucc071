@@ -75,7 +75,7 @@ class Entrance implements Runnable {
         }
         scanner.close();
     }
-    private void parkVehicle(Scanner scanner) {
+    private void parkVehicle(Scanner scanner) throws InvalidInputException{
         parkingLock.lock(); // Lock for parking operation
         try {
             System.out.print("Enter license plate: ");
